@@ -7,7 +7,7 @@ defaults:
   - override /data: bats
   #- override /model: baseline_net
   - override /callbacks: default
-  - override /trainer: mps
+  - override /trainer: gpu
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
@@ -21,18 +21,14 @@ trainer:
   max_epochs: 10
   gradient_clip_val: 0.5
 
-# model:
-#   optimizer:
-#     lr: 0.002
-#   net:
-#     pretrained: true
-#   compile: false
+model:
+  num_classes: 12
 
 data:
-  batch_size: 32
+  batch_size: 8
   desired_length: 1
-  sample_rate: 80000
-  n_fft: 1024
+  sample_rate: 125000
+  n_fft: 2048
   hop: 256
 
 logger:

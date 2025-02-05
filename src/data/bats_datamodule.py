@@ -50,7 +50,30 @@ class BatsDataset(Dataset):
         else:
             transforms.append(torchaudio.transforms.Spectrogram(n_fft=self.n_fft, hop_length=self.hop_length))
         transforms.append(torchaudio.transforms.AmplitudeToDB())
+        transforms.append(torchaudio.transforms.TimeMasking(time_mask_param=80))
+        transforms.append(torchaudio.transforms.FrequencyMasking(freq_mask_param=80))
         return torch.nn.Sequential(*transforms)
+
+    def low_pass(self, waveform, cutoff=100000):
+        """Keep frequencies below cutoff"""
+        return torchaudio.functional.lowpass_biquad(
+            waveform, 
+            self.sample_rate, 
+            cutoff_freq=cutoff
+        )
+
+    def high_pass(self, waveform, cutoff=100):
+        """Remove frequencies below cutoff"""
+        return torchaudio.functional.highpass_biquad(
+            waveform,
+            self.sample_rate,
+            cutoff_freq=cutoff
+        )
+
+    def band_pass(self, waveform, low_cut=20000, high_cut=100000):
+        """Isolate frequency band"""
+        waveform = self.high_pass(waveform, low_cut)
+        return self.low_pass(waveform, high_cut)
 
     def __len__(self) -> int:
         return len(self.filepaths)
@@ -66,10 +89,12 @@ class BatsDataset(Dataset):
             waveform = torch.nn.functional.pad(waveform, pad)
         else:
             waveform = waveform[..., : self.len_threshold]
+
+        #waveform = self.band_pass(waveform)
         spectrogram = self.transform(waveform)
 
         # Normalize spectrogram
-        # spectrogram = self._normalize(spectrogram)
+        #spectrogram = self._normalize(spectrogram)
 
         # Add channel dimension (if needed) and flatten
         # spectrogram = spectrogram.unsqueeze(0)  # [1, n_mels, time]
@@ -81,7 +106,6 @@ class BatsDataModule(LightningDataModule):
     def __init__(
         self,
         data_dir: str,
-        audio_fname: str,
         annotations_fname: str,
         train_val_test_split: Tuple[float, float, float] = (0.8, 0.1, 0.1),
         batch_size: int = 64,
@@ -146,7 +170,10 @@ class BatsDataModule(LightningDataModule):
             .to_torch()
             .ravel()
         )
-        filepaths = [os.path.join(self.hparams.data_dir, self.hparams.audio_fname, fname) for fname in annotations["File Name"]]
+        filepaths = [
+            os.path.join(self.hparams.data_dir, folder_name, file_name)
+            for folder_name, file_name in zip(annotations["File folder"], annotations["File name"])
+        ]
         dataset = BatsDataset(
             filepaths=filepaths,
             labels=emmiters,

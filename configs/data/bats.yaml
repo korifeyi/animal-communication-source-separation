@@ -1,8 +1,7 @@
 _target_: src.data.bats_datamodule.BatsDataModule
-data_dir: "/Users/ivanr/diploma/animal-communication-source-separation/datasets/egyptian_fruit_bats"
-audio_fname: audio
+data_dir: "/root/animal-communication-source-separation/egyptian_fruit_bat_annotated"
 annotations_fname: annotations.csv
 batch_size: 128 # Needs to be divisible by the number of devices (e.g., if in a distributed setup)
 train_val_test_split: [0.8, 0.1, 0.1]
-num_workers: 0
+num_workers: 21
 pin_memory: False

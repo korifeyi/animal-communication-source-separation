@@ -14,6 +14,7 @@ class BatsLitModule(LightningModule):
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
         compile: bool,
+        num_classes: int
     ) -> None:
         """Initialize a `BatsLitModule`.
 
@@ -33,9 +34,9 @@ class BatsLitModule(LightningModule):
         self.criterion = torch.nn.CrossEntropyLoss()
 
         # metric objects for calculating and averaging accuracy across batches
-        self.train_acc = Accuracy(task="multiclass", num_classes=10)
-        self.val_acc = Accuracy(task="multiclass", num_classes=10)
-        self.test_acc = Accuracy(task="multiclass", num_classes=10)
+        self.train_acc = Accuracy(task="multiclass", num_classes=num_classes)
+        self.val_acc = Accuracy(task="multiclass", num_classes=num_classes)
+        self.test_acc = Accuracy(task="multiclass", num_classes=num_classes)
 
         # for averaging loss across batches
         self.train_loss = MeanMetric()
