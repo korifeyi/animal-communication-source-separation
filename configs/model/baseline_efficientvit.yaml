@@ -1,0 +1,21 @@
+_target_: src.models.bats_module.BatsLitModule
+
+optimizer:
+  _target_: torch.optim.AdamW
+  _partial_: true
+  lr: 0.00007
+  weight_decay: 0.000
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.OneCycleLR
+  _partial_: true
+  max_lr: 0.0003
+  epochs: 15
+  steps_per_epoch: 673
+net:
+  _target_: src.models.components.efficientvit.EfficientVIT
+  num_classes: 12
+  pretrained: true
+
+# compile model for faster training with pytorch 2.0
+compile: false

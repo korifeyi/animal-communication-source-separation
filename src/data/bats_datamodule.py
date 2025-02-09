@@ -1,5 +1,6 @@
 import torch
 import torchaudio
+import torchvision
 import polars as pl
 import os
 from typing import Dict, Tuple, Optional, Any, List
@@ -21,17 +22,21 @@ class BatsDataset(Dataset):
         self,
         filepaths: List[str],
         labels: List[int],
+        sample_starts: List[int],
         sample_rate: int = 16000,
         desired_length: int = 2,
         n_fft: int = 510,
         hop_length: int = 125,
         n_mels: int = 64,
+        f_min: int = 0,
+        f_max: int = 8000,
         use_mel: bool = False,
         *args,
         **kwargs,
     ):
         self.filepaths = filepaths
         self.labels = labels
+        self.sample_starts = sample_starts
         self.sample_rate = sample_rate
         self.len_threshold = desired_length * sample_rate
         self.n_fft = n_fft
@@ -41,11 +46,13 @@ class BatsDataset(Dataset):
 
         self.transform = self._create_transform()
 
+
+
     def _create_transform(self):
         transforms = []
         if self.use_mel:
             transforms.append(
-                torchaudio.transforms.MelSpectrogram(sample_rate=self.sample_rate, n_fft=self.n_fft, hop_length=self.hop_length, n_mels=self.n_mels)
+                torchaudio.transforms.MelSpectrogram(sample_rate=self.sample_rate, n_fft=self.n_fft, hop_length=self.hop_length, n_mels=self.n_mels, f_min=self.f_min, f_max=self.f_max)
             )
         else:
             transforms.append(torchaudio.transforms.Spectrogram(n_fft=self.n_fft, hop_length=self.hop_length))
@@ -80,7 +87,8 @@ class BatsDataset(Dataset):
 
     def __getitem__(self, idx: int):
         waveform, sr = torchaudio.load(self.filepaths[idx])
-
+        assert self.sample_starts[idx] < waveform.shape[-1], f"waveform #{idx} problem: len {waveform.shape[-1]}, sample starts at {self.sample_starts[idx]}, filepath: {self.filepaths[idx]}"
+        waveform = waveform[..., self.sample_starts[idx]:]
         if sr != self.sample_rate:
             resampler = torchaudio.transforms.Resample(sr, self.sample_rate)
             waveform = resampler(waveform)
@@ -98,7 +106,7 @@ class BatsDataset(Dataset):
 
         # Add channel dimension (if needed) and flatten
         # spectrogram = spectrogram.unsqueeze(0)  # [1, n_mels, time]
-        spectrogram = spectrogram.repeat(3, 1, 1)
+        #spectrogram = spectrogram.repeat(3, 1, 1)
         return spectrogram, self.labels[idx]
 
 
@@ -170,6 +178,9 @@ class BatsDataModule(LightningDataModule):
             .to_torch()
             .ravel()
         )
+        sample_starts = annotations.select(
+            pl.col("Start sample")
+        ).to_torch().ravel()
         filepaths = [
             os.path.join(self.hparams.data_dir, folder_name, file_name)
             for folder_name, file_name in zip(annotations["File folder"], annotations["File name"])
@@ -177,6 +188,7 @@ class BatsDataModule(LightningDataModule):
         dataset = BatsDataset(
             filepaths=filepaths,
             labels=emmiters,
+            sample_starts=sample_starts,
             **self.hparams,
         )
 

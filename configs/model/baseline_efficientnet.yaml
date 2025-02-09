@@ -11,7 +11,7 @@ scheduler:
   _partial_: true
   max_lr: 0.0003
   epochs: 10
-  steps_per_epoch: 6029
+  steps_per_epoch: 1508
 net:
   _target_: src.models.components.efficientnet.EfficientNet
   num_classes: 12

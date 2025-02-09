@@ -5,38 +5,42 @@
 
 defaults:
   - override /data: bats
-  #- override /model: baseline_net
+  - override /model: baseline_efficientvit
   - override /callbacks: default
   - override /trainer: gpu
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-tags: ["bats", "baseline", "efficientnet"]
+tags: ["bats", "baseline", "efficientvit"]
 
 seed: 245
 
 trainer:
-  min_epochs: 10
-  max_epochs: 10
+  min_epochs: 15
+  max_epochs: 15
   gradient_clip_val: 0.5
 
 model:
   num_classes: 12
-  weights: [3.12633888, 4.28326017, 3.96898085, 4.37544173, 4.49779961,
-       4.76066275, 2.19601781, 3.87881051, 4.95141092, 2.8631653 ,
-       3.24221286, 3.12836831]
+  weights: [2.86805807, 3.47640522, 4.64740719, 5.87525434, 2.09101835,
+       4.34245812, 4.24390347, 5.9287711 , 4.03328559, 2.96875458,
+       3.41184593, 3.26400433]
 
 data:
   batch_size: 32
   desired_length: 1
-  sample_rate: 100000
+  sample_rate: 250000
+  f_min: 2000
+  f_max: 150000
+  use_mels: true
+  n_mels: 224
   n_fft: 1024
-  hop: 128
+  hop: 1116
 
 logger:
   wandb:
     tags: ${tags}
-    group: "baseline"
+    group: "baseline_efficientvit"
   # aim:
   #   experiment: "baseline"

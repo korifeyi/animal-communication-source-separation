@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, List, Optional
 
 import torch
 from lightning import LightningModule
@@ -14,7 +14,8 @@ class BatsLitModule(LightningModule):
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
         compile: bool,
-        num_classes: int
+        num_classes: int,
+        weights: Optional[List[float]] = None,
     ) -> None:
         """Initialize a `BatsLitModule`.
 
@@ -31,7 +32,8 @@ class BatsLitModule(LightningModule):
         self.net = net
 
         # loss function
-        self.criterion = torch.nn.CrossEntropyLoss()
+        assert weights is not None
+        self.criterion = torch.nn.CrossEntropyLoss(weight=torch.tensor(weights).float())
 
         # metric objects for calculating and averaging accuracy across batches
         self.train_acc = Accuracy(task="multiclass", num_classes=num_classes)
